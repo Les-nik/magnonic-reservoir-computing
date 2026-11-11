@@ -21,7 +21,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from fulladder import fields, logic, mobius, readout
+from magnonic_rc import fields, logic, mobius, readout
 
 
 def load(path: Path):

@@ -19,7 +19,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from fulladder import logic, mobius, readout
+from magnonic_rc import logic, mobius, readout
 
 ROOT = Path(__file__).resolve().parents[1]
 N_POINTS = 40

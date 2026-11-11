@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magnonic-rc"
+version = "0.1.0"
+description = "Readout analysis for magnonic reservoir computing simulated in MuMax3 / amumax"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Nikodem Leśniewski" }]
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.21", "scipy>=1.8", "matplotlib>=3.5"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+cluster = ["numcodecs"]
+
+[tool.setuptools]
+packages = ["magnonic_rc"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

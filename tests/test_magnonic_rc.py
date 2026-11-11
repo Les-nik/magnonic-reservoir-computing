@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from fulladder import fields, logic, mobius, readout
+from magnonic_rc import fields, logic, mobius, readout
 
 T = logic.targets()
 
@@ -113,7 +113,7 @@ def test_phasor_fit_uneven_times():
 
 def test_zarr_reader_and_phasor_map(tmp_path):
     import json
-    from fulladder.zarr_io import ZarrArray, phasor_map
+    from magnonic_rc.zarr_io import ZarrArray, phasor_map
 
     nt, ny, nx, f = 40, 4, 6, 2.1e9
     t = np.arange(nt) / (8 * f)

@@ -1,10 +1,15 @@
-# magnonic-full-adder
+# magnonic-reservoir-computing
 
-[![tests](https://github.com/Les-nik/magnonic-full-adder/actions/workflows/tests.yml/badge.svg)](https://github.com/Les-nik/magnonic-full-adder/actions/workflows/tests.yml)
+[![tests](https://github.com/Les-nik/magnonic-reservoir-computing/actions/workflows/tests.yml/badge.svg)](https://github.com/Les-nik/magnonic-reservoir-computing/actions/workflows/tests.yml)
 
-MuMax3 / amumax simulations and readout analysis of a spin-wave full adder: three antennas
-on a 60 nm YIG film, a row of nanoscale CoFeB "bowtie" resonators above it, and a linear
-readout of the spin-wave field that should reproduce the SUM and carry-out (COUT) bits for
+MuMax3 / amumax simulations and readout analysis of a magnonic reservoir computer. The
+reservoir is a 60 nm YIG film with nanoscale CoFeB "bowtie" resonators above it. Three
+antennas write the input bits as spin-wave amplitudes, and a trained linear readout of the
+spin-wave field gives the output. Only the readout weights are trained; the magnetic system
+itself is fixed.
+
+The benchmark task is a one-bit full adder: from the inputs A, B and carry-in, the readout has
+to reproduce SUM (A xor B xor Cin, which needs a nonlinear reservoir) and carry-out (COUT) for
 all eight input combinations.
 
 Work done in the EU project MANNGA at Adam Mickiewicz University, Poznań. The results are in
@@ -41,11 +46,11 @@ truth-table fit, leave-one-out test, random-feature baseline, nonlinearity map
 
 | Module | Purpose |
 | --- | --- |
-| `fulladder/zarr_io.py` | reads amumax zarr v2 arrays frame by frame, no `zarr` package needed |
-| `fulladder/fields.py` | phasor fit, FFT map, Gaussian blur, sampling on a grid of readout points |
-| `fulladder/readout.py` | linear readout, exhaustive and greedy point selection, checks, sparse intensity readout |
-| `fulladder/mobius.py` | decomposition of the eight cases into single-input and mixed terms |
-| `fulladder/logic.py` | full-adder truth table |
+| `magnonic_rc/zarr_io.py` | reads amumax zarr v2 arrays frame by frame, no `zarr` package needed |
+| `magnonic_rc/fields.py` | phasor fit, FFT map, Gaussian blur, sampling on a grid of readout points |
+| `magnonic_rc/readout.py` | linear readout, exhaustive and greedy point selection, checks, sparse intensity readout |
+| `magnonic_rc/mobius.py` | decomposition of the eight cases into single-input and mixed terms |
+| `magnonic_rc/logic.py` | full-adder truth table |
 
 ### Readout and its checks
 
@@ -87,7 +92,7 @@ is exactly zero and the iteration would never move.
 ## Usage
 
 ```bash
-pip install -r requirements.txt
+pip install -e ".[test]"
 pytest                               # 14 tests
 python examples/synthetic_demo.py    # figure above
 ```
@@ -105,7 +110,7 @@ python scripts/analyse_phasors.py phasors.npz --points "1210,480;1210,520;1250,6
 python scripts/analyse_phasors.py phasors.npz --search 3 --roi 1000,1400,300,900 --block 20
 ```
 
-`phasor_maps.py` needs `numcodecs` for compressed zarr chunks (`pip install numcodecs`).
+`phasor_maps.py` needs `numcodecs` for compressed zarr chunks (`pip install -e ".[cluster]"`).
 
 ## License
 

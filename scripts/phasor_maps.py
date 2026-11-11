@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-from fulladder.zarr_io import phasor_map
+from magnonic_rc.zarr_io import phasor_map
 
 
 def main():
