@@ -1,0 +1,347 @@
+// dx := 5e-09
+// dy := 5e-09
+// dz := 5e-09
+low := 1
+high := 5
+A1 := low *1e-3
+A2 := low *1e-3
+A3 := low *1e-3
+
+Amp_GMF := 0.5 * (low*1e-3)
+// Nx := 1024
+// Ny := 128
+// Nz := 10
+extension_eff := 500
+
+Nx = 1300 + extension_eff
+Ny = 1300
+Nz = 20
+
+dx = 5e-09
+dy = 5e-09
+dz = 5e-09 
+
+cx := dx
+cy := dy
+cz := dz
+
+pbcx=1
+pbcy=1
+extension := (extension_eff/2) * dx
+
+smoothmesh(true,true,false)
+
+// setgridsize(Nx, Ny, Nz)
+// setcellsize(dx, dy, dz)
+// setPBC(0, 16, 0)
+
+
+edgesmooth = 0
+
+NNY := 48
+sub_square_1 := cuboid(NNY*cx/2, NNY*cy/2, Nz*cz).transl(-NNY*cx/2*0.7,-NNY*cy/2*0,0)
+sub_square_2 := cuboid(NNY*cx/2, NNY*cy/2, Nz*cz).transl(NNY*cx/2*0.7,-NNY*cy/2*0,0)
+triangle_1 := cuboid(NNY*cx/2/2, NNY*cy/2/2, Nz*cz).transl(-NNY*cx/2*0.1,-NNY*cy*0.2/2,0).rotz(-45*pi/180)
+triangle_2 := cuboid(NNY*cx/2/2, NNY*cy/2/2, Nz*cz).transl(NNY*cx/2*0.1,-NNY*cy/2*0.2,0).rotz(45*pi/180)
+g := triangle_1.add(triangle_2).sub(sub_square_1).sub(sub_square_2)
+
+bowtie_left := triangle_1.sub(sub_square_1)
+bowtie_right := triangle_2.sub(sub_square_2)
+bowtie_combined := bowtie_left.add(bowtie_right).rotz(-90*pi/180)
+
+
+// Geometry, regions and magnetic parameters
+yig := Layers(0, 12)
+bowtie := bowtie_combined.intersect(Layers(13,Nz))
+
+
+// ── Optymalne pozycje rezonatorów ──
+// Zmierzone na mapie FFT jako indeksy komórek; konwersja:
+//   coord = (cell - (N-1)/2) * cellsize
+cx_center := 899.5   // (Nx-1)/2 ; Nx=1800
+cy_center := 649.5   // (Ny-1)/2 ; Ny=1300
+
+// Kolumna 1 — 4 rezonatory (x cell = 750)
+col1_x := (750.0  - cx_center) * dx
+c1_y1  := (259.0  - cy_center) * dy
+c1_y2  := (518.0  - cy_center) * dy
+c1_y3  := (777.0  - cy_center) * dy
+c1_y4  := (1036.0 - cy_center) * dy
+
+// Kolumna 2 — 3 rezonatory (x cell = 1100)
+col2_x := (1100.0 - cx_center) * dx
+c2_y1  := (403.0  - cy_center) * dy
+c2_y2  := (654.0  - cy_center) * dy
+c2_y3  := (893.0  - cy_center) * dy
+
+// Kolumna 1
+bowtie1 := bowtie.transl(col1_x, c1_y1, 0)
+bowtie2 := bowtie.transl(col1_x, c1_y2, 0)
+bowtie3 := bowtie.transl(col1_x, c1_y3, 0)
+bowtie4 := bowtie.transl(col1_x, c1_y4, 0)
+
+// Kolumna 2
+bowtie5 := bowtie.transl(col2_x, c2_y1, 0)
+bowtie6 := bowtie.transl(col2_x, c2_y2, 0)
+bowtie7 := bowtie.transl(col2_x, c2_y3, 0)
+
+geometry := yig.add(bowtie1.add(bowtie2.add(bowtie3.add(bowtie4.add(bowtie5.add(bowtie6.add(bowtie7)))))))
+setgeom(geometry)
+
+
+//Parameters YIG
+Msat = 139e3
+Aex = 3.5e-12
+alpha =  6e-4
+
+m=uniform(0, 0.9999, 1e-5)
+BB := 10  
+B0 := BB*1e-3
+B_vec := vector(1e-6, B0, 1e-7)
+B_ext = B_vec
+
+
+// CoFeB bowtie resonator
+// Kolumna 1 (4 rezonatory)
+bowtie_region_id1 := 247
+bowtie_region_id2 := 248
+bowtie_region_id3 := 249
+bowtie_region_id4 := 250
+defregion(bowtie_region_id1, bowtie1)
+defregion(bowtie_region_id2, bowtie2)
+defregion(bowtie_region_id3, bowtie3)
+defregion(bowtie_region_id4, bowtie4)
+
+for j:=247; j<251; j++{
+    print(j)
+    Msat.setregion(j, 1150e3)
+    Aex.setregion(j, 16e-12)
+    alpha.setregion(j, 5e-3)
+}
+m.setregion(bowtie_region_id1, (TwoDomain(0,1,0, 1,0,0, 0,-1,0).rotz(-90*pi/180).transl(col1_x, c1_y1, 0)))
+m.setregion(bowtie_region_id2, (TwoDomain(0,1,0, 1,0,0, 0,-1,0).rotz(-90*pi/180).transl(col1_x, c1_y2, 0)))
+m.setregion(bowtie_region_id3, (TwoDomain(0,1,0, 1,0,0, 0,-1,0).rotz(-90*pi/180).transl(col1_x, c1_y3, 0)))
+m.setregion(bowtie_region_id4, (TwoDomain(0,1,0, 1,0,0, 0,-1,0).rotz(-90*pi/180).transl(col1_x, c1_y4, 0)))
+
+// Kolumna 2 (3 rezonatory)
+bowtie_region_id5 := 244
+bowtie_region_id6 := 245
+bowtie_region_id7 := 246
+defregion(bowtie_region_id5, bowtie5)
+defregion(bowtie_region_id6, bowtie6)
+defregion(bowtie_region_id7, bowtie7)
+
+for j:=244; j<247; j++{
+    print(j)
+    Msat.setregion(j, 1150e3)
+    Aex.setregion(j, 16e-12)
+    alpha.setregion(j, 5e-3)
+}
+m.setregion(bowtie_region_id5, (TwoDomain(0,1,0, 1,0,0, 0,-1,0).rotz(-90*pi/180).transl(col2_x, c2_y1, 0)))
+m.setregion(bowtie_region_id6, (TwoDomain(0,1,0, 1,0,0, 0,-1,0).rotz(-90*pi/180).transl(col2_x, c2_y2, 0)))
+m.setregion(bowtie_region_id7, (TwoDomain(0,1,0, 1,0,0, 0,-1,0).rotz(-90*pi/180).transl(col2_x, c2_y3, 0)))
+snapshot(regions)
+snapshot(cropZ(m, Nz-2, Nz-1))
+snapshot(cropZ(regions, Nz-2, Nz-1))
+
+////// ABSORBING BOUNDARY LAYERS (ABL)
+
+// ABL - REGIONS
+grad_up := yrange(1,0)
+grad_down  := yrange(1,0)
+grad_left  := xrange(1,0)
+grad_right  := xrange(1,0)
+grad0 := xrange(1,0)
+
+// grad := 250 
+grad := 100  // gradiend poddzas tlumienia
+gradv := 100  // gradiend poddzas tlumienia
+gr_step := 4 // grad musi byc taki sam dla x i y, można zmienić grad_step dla x i y. Znacznie zwiększyć uklad wzdłuż y
+gr_step_v := 2 // grad musi byc taki sam dla x i y, można zmienić grad_step dla x i y. Znacznie zwiększyć uklad wzdłuż y
+for i:=4; i<(grad+4); i++{
+    grad_up = yrange( ( (Ny*dy/2)-gr_step_v*(gradv)*dx+i*gr_step_v*dx), 
+                    ( (Ny*dy/2)-gr_step_v*(gradv)*dy+gr_step_v*(i+1)*dy) )
+    grad_down  = yrange( (-(Ny*dy/2)+gr_step_v*(gradv)*dy-gr_step_v*(i+1)*dy), 
+                    (-(Ny*dy/2)+gr_step_v*(gradv)*dy-gr_step_v*i*dy) )
+    /////////////////////////////////////////////////////
+    grad_left = xrange( (-(Nx*dx/2)+gr_step*(grad)*dx-gr_step*(i+1)*dx), 
+                    (-(Nx*dx/2)+gr_step*(grad)*dx-gr_step*i*dx) )
+    grad_right = xrange( ((Nx*dx/2)-gr_step*(grad)*dx+gr_step*i*dx), 
+                    ((Nx*dx/2)-gr_step*(grad)*dx+gr_step*(i+1)*dx) )
+
+    grad0 = grad_left.add(grad_right.add(grad_up).add(grad_down))
+    DefRegion(i, grad0.intersect(yig))
+}
+snapshot(regions)
+/////////////////////////////////////////////////////////////////
+
+// ABL - ASSIGNING DAMPING VALUES
+alpha0 := 6e-4
+i0 := 20
+for i:=i0; i<(grad+4); i++{
+    dmp := alpha0 + 0.25*pow( (i-i0)/grad,2)  // damping value
+    alpha.setRegion(i, dmp )
+    Msat.SetRegion(i, 139e3)
+    Aex.SetRegion(i, 3.5e-12)
+}
+
+snapshot(alpha)
+Save(alpha)
+
+relax()
+minimize()
+setsolver(4)
+run(2e-9)
+relax()
+
+snapshot(cropZ(m, Nz-2, Nz-1))
+
+// Input 1
+x_i := ((-(1/6)*Nx*cx) + (50*cx)) - extension
+y_1 := -(1/5)*Ny*cy
+
+
+// Amp := 1e-4
+Amp_1 := A1
+f_cut := 2.1e09
+t_sampl := 1/f_cut/8
+// t_sampl := 0.5/(f_cut*1.1)
+
+
+// Solver and sampling settings
+ky := 0.0
+antLength := 149e-9 // Ny*dy - 2*d_step*d_step
+antWidth := 149e-9
+field_Bx1 := newVectorMask(Nx, Ny, Nz)
+field_Bz1 := newVectorMask(Nx, Ny, Nz)
+
+antWidth_int := floor(antWidth/dx)
+for xInd :=0; xInd < Nx; xInd++ {  // definition of antena width
+    for yInd := floor(0); yInd < Ny; yInd++ {
+        for zInd := 0; zInd < 12; zInd++ {
+            r := index2coord(xInd, yInd, zInd)  
+            x := r.x()
+            y := r.y()
+            z := r.z()
+
+            gauss_y := exp( -2.77*pow(y-y_1,2)/(2*pow(antLength,2)) )
+            gauss_x := exp( -2.77*pow((x-x_i),2)/(pow(antWidth,2)) )
+            field_Bx1.setVector(xInd,yInd,zInd, vector( Amp_1*gauss_y*gauss_x, 0, 0 ))
+            field_Bz1.setVector(xInd,yInd,zInd, vector( 0, 0,  Amp_1*gauss_y*gauss_x ))
+        }
+    }
+}
+B_ext.add(field_Bx1, 1 ) 
+B_ext.add(field_Bz1, 1 ) 
+snapshot(B_ext.comp(0))
+B_ext = B_vec
+snapshot(B_ext.comp(0))
+
+B_ext.add(field_Bx1, sin(2*pi*f_cut*t)*( 1-exp(-0.15e9*t)  ) ) 
+B_ext.add(field_Bz1, cos(2*pi*f_cut*t)*( 1-exp(-0.15e9*t)  ) ) 
+
+// Input 2
+y_2 := 0
+
+Amp_2 := A2
+
+field_Bx2 := newVectorMask(Nx, Ny, Nz)
+field_Bz2 := newVectorMask(Nx, Ny, Nz)
+
+for xInd2 :=0; xInd2 < Nx; xInd2++ {  // definition of antena width
+    for yInd2 := floor(0); yInd2 < Ny; yInd2++ {
+        for zInd2 := 0; zInd2 < 12; zInd2++ {
+            r := index2coord(xInd2, yInd2, zInd2)  
+            x := r.x()
+            y := r.y()
+            z := r.z()
+
+            gauss_y := exp( -2.77*pow(y-y_2,2)/(2*pow(antLength,2)) )
+            gauss_x := exp( -2.77*pow((x-x_i),2)/(pow(antWidth,2)) )
+            field_Bx2.setVector(xInd2,yInd2,zInd2, vector( Amp_2*gauss_y*gauss_x, 0, 0 ))
+            field_Bz2.setVector(xInd2,yInd2,zInd2, vector( 0, 0, Amp_2*gauss_y*gauss_x ))
+        }
+    }
+}
+B_ext.add(field_Bx2, 1 ) 
+B_ext.add(field_Bz2, 1 ) 
+snapshot(B_ext.comp(0))
+B_ext = B_vec
+snapshot(B_ext.comp(0))
+
+B_ext.add(field_Bx2, sin(2*pi*f_cut*t)*( 1-exp(-0.15e9*t)  ) ) 
+B_ext.add(field_Bz2, cos(2*pi*f_cut*t)*( 1-exp(-0.15e9*t)  ) ) 
+
+// Input 3
+y_3 := (1/5)*Ny*cy
+
+Amp_3 := A3
+
+field_Bx3 := newVectorMask(Nx, Ny, Nz)
+field_Bz3 := newVectorMask(Nx, Ny, Nz)
+
+for xInd3 :=0; xInd3 < Nx; xInd3++ {  // definition of antena width
+    for yInd3 := floor(0); yInd3 < Ny; yInd3++ {
+        for zInd3 := 0; zInd3 < 12; zInd3++ {
+            r := index2coord(xInd3, yInd3, zInd3)  
+            x := r.x()
+            y := r.y()
+            z := r.z()
+
+            gauss_y := exp( -2.77*pow(y-y_3,2)/(2*pow(antLength,2)) )
+            gauss_x := exp( -2.77*pow((x-x_i),2)/(pow(antWidth,2)) )
+            field_Bx3.setVector(xInd3,yInd3,zInd3, vector( Amp_3*gauss_y*gauss_x, 0, 0 ))
+            field_Bz3.setVector(xInd3,yInd3,zInd3, vector( 0, 0, Amp_3*gauss_y*gauss_x ))
+        }
+    }
+}
+B_ext.add(field_Bx3, 1 ) 
+snapshot(B_ext.comp(0))
+B_ext = B_vec
+snapshot(B_ext.comp(0))
+
+B_ext.add(field_Bx3, sin(2*pi*f_cut*t)*( 1-exp(-0.15e9*t)  ) ) 
+B_ext.add(field_Bz3, cos(2*pi*f_cut*t)*( 1-exp(-0.15e9*t)  ) )  
+
+// Global Microwave Field — uniform Bx over entire grid
+field_GMF := newVectorMask(Nx, Ny, Nz)
+for xInd := 0; xInd < Nx; xInd++ {
+    for yInd := 0; yInd < Ny; yInd++ {
+        for zInd := 0; zInd < Nz; zInd++ {
+            field_GMF.setVector(xInd, yInd, zInd, vector(Amp_GMF, 0, 0))
+        }
+    }
+}
+
+B_ext.add(field_GMF, sin(2*pi*f_cut*t))
+
+setsolver(4)
+MaxDt = 1/f_cut / 20
+MinDt = 1/f_cut / 2000
+//MaxErr = 0.3e-7
+
+snapshot(m)
+
+Snapshot(B_ext.comp(0))
+Snapshot(B_ext.comp(1))
+Snapshot(B_ext.comp(2))
+
+
+autosnapshot(m.comp(0), 5e-9)
+autosnapshot(m.comp(1), 5e-9)
+autosnapshot(m.comp(2), 5e-9)
+
+t_stable_state := 25e-9
+
+autosave(m,  t_stable_state/50)
+run(t_stable_state)
+snapshot(m.comp(2))
+
+// MaxDt = t_sampl / 100   
+// autosave(CropZ(m, 11, 12),  t_sampl)
+autosave(CropZ(m, 11, 12),  t_sampl)
+run(65*t_sampl)
+
+// autosave(CropZ(m, 11, 12),  0)
+// B_ext = B_vec
+// run(t_stable_state)
